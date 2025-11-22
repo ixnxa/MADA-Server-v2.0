@@ -1,3 +1,4 @@
+import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -5,6 +6,9 @@ plugins {
 	kotlin("plugin.spring") version "2.3.0-RC" // 이전 Kotlin 버전은 1.9.25
 	id("org.springframework.boot") version "3.5.7"
 	id("io.spring.dependency-management") version "1.1.7"
+	id("org.jlleitschuh.gradle.ktlint") version "14.0.1"
+    id("jacoco")
+
 }
 
 group = "com.mada"
@@ -35,6 +39,7 @@ repositories {
 	mavenCentral()
 }
 
+
 extra["springModulithVersion"] = "1.4.4"
 
 dependencies {
@@ -43,6 +48,7 @@ dependencies {
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.springframework.modulith:spring-modulith-starter-core")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("com.h2database:h2")
 	runtimeOnly("org.postgresql:postgresql")
@@ -73,5 +79,43 @@ kotlin {
 }
 
 tasks.withType<Test> {
-	useJUnitPlatform()
+    useJUnitPlatform()
+    finalizedBy("jacocoTestReport")
+}
+
+ktlint {
+    filter {
+        exclude("*.kts")
+        exclude("*.json")
+    }
+    reporters {
+        reporter(ReporterType.JSON)
+    }
+}
+
+jacoco {
+    toolVersion = "0.8.14"
+}
+
+tasks.jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            element = "CLASS"
+
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = 0.90.toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }
